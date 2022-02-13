@@ -1,7 +1,9 @@
 package com.example.fragmentexample1updated;
 
+import android.content.Context;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import android.view.LayoutInflater;
@@ -21,7 +23,28 @@ public class SimpleFragmen extends Fragment {
 
     private static final  int Yes =0;
     private static final  int No =1;
+    private static final  int None =2;
 
+    private int mCurrentChoice = None;
+    private OnFragmentInteractionListener mListener;
+
+    private static final String CHOICE_PARAM = "choice-param";
+
+    interface OnFragmentInteractionListener{
+        void  onRadioButtonChoiceChecked(int choice);
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+
+        if (context instanceof OnFragmentInteractionListener){
+            mListener = (OnFragmentInteractionListener) context;
+        }
+        else {
+            throw new ClassCastException(getResources().getString(R.string.exception_message));
+        }
+    }
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -59,6 +82,15 @@ public class SimpleFragmen extends Fragment {
         return fragment;
     }
 
+    public static SimpleFragmen newInstance(int choice){
+        SimpleFragmen fragment = new SimpleFragmen();
+
+        Bundle args = new Bundle();
+        args.putInt(CHOICE_PARAM, choice);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,27 +107,45 @@ public class SimpleFragmen extends Fragment {
         RadioGroup radioGroup = view.findViewById(R.id.radio_btn_fdbck_group);
         TextView questionText = view.findViewById(R.id.question_text);
 
-            radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(RadioGroup radioGroup, int i) {
-                    RadioButton btn = radioGroup.findViewById(i);
-                    int selectedIndex = radioGroup.indexOfChild(btn);
+        if (getArguments().containsKey(CHOICE_PARAM)){
 
-                    switch (selectedIndex){
-                        case Yes:
-                           questionText.setText(R.string.yes_message);
-                            break;
 
-                        case No:
-                            questionText.setText(R.string.no_message);
-                            break;
 
-                        default:
-                            break;
-                    }
+            mCurrentChoice = getArguments().getInt(CHOICE_PARAM);
 
+            if(mCurrentChoice!= None) {
+
+                radioGroup.check(radioGroup.getChildAt(mCurrentChoice).getId());
+            }
+        }
+
+        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup radioGroup, int i) {
+                RadioButton btn = radioGroup.findViewById(i);
+                int selectedIndex = radioGroup.indexOfChild(btn);
+
+                switch (selectedIndex){
+                    case Yes:
+                        questionText.setText(R.string.yes_message);
+                        mCurrentChoice =Yes;
+                        mListener.onRadioButtonChoiceChecked(Yes);
+                        break;
+
+                    case No:
+                        questionText.setText(R.string.no_message);
+                        mCurrentChoice = No;
+                        mListener.onRadioButtonChoiceChecked(No);
+                        break;
+
+                    default:
+                        mCurrentChoice = None;
+                        mListener.onRadioButtonChoiceChecked(None);
+                        break;
                 }
-            });
+
+            }
+        });
         // Inflate the layout for this fragment
         return view;
     }
